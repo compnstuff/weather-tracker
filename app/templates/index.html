@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Tracker — {{ city }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 1.5rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem; color: #f8fafc; }
+    h2 { font-size: 1rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
+
+    .search-bar { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+    .search-bar input { flex: 1; padding: .5rem .75rem; border-radius: .5rem; border: 1px solid #334155; background: #1e293b; color: #f1f5f9; font-size: .95rem; }
+    .search-bar button, .log-btn { padding: .5rem 1rem; border-radius: .5rem; border: none; background: #3b82f6; color: #fff; font-weight: 600; cursor: pointer; }
+    .search-bar button:hover, .log-btn:hover { background: #2563eb; }
+
+    .error { background: #7f1d1d; border: 1px solid #ef4444; border-radius: .5rem; padding: .75rem 1rem; margin-bottom: 1.5rem; color: #fca5a5; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { background: #1e293b; border-radius: .75rem; padding: 1.25rem; border: 1px solid #334155; }
+
+    .current-main { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .current-main img { width: 72px; height: 72px; }
+    .current-temp { font-size: 3rem; font-weight: 700; line-height: 1; }
+    .current-desc { color: #94a3b8; margin-top: .25rem; text-transform: capitalize; }
+    .current-city { font-size: 1.1rem; font-weight: 600; }
+
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+    .stat { background: #0f172a; border-radius: .5rem; padding: .5rem .75rem; }
+    .stat-label { font-size: .7rem; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-value { font-size: 1rem; font-weight: 600; margin-top: .1rem; }
+
+    .forecast-scroll { display: flex; gap: .75rem; overflow-x: auto; padding-bottom: .5rem; }
+    .forecast-item { flex: 0 0 90px; background: #1e293b; border-radius: .5rem; border: 1px solid #334155; padding: .6rem; text-align: center; }
+    .forecast-item img { width: 40px; height: 40px; }
+    .forecast-time { font-size: .7rem; color: #64748b; margin-bottom: .25rem; }
+    .forecast-temp { font-weight: 700; }
+    .forecast-pop { font-size: .7rem; color: #60a5fa; margin-top: .2rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th { text-align: left; padding: .4rem .75rem; color: #64748b; font-weight: 600; font-size: .75rem; text-transform: uppercase; border-bottom: 1px solid #334155; }
+    td { padding: .5rem .75rem; border-bottom: 1px solid #1e293b; }
+    tr:hover td { background: #1e293b; }
+
+    .log-form { display: inline; }
+    .section { margin-bottom: 1.5rem; }
+
+    ::-webkit-scrollbar { height: 4px; } ::-webkit-scrollbar-track { background: #0f172a; } ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<h1>Weather Tracker</h1>
+
+<form method="get" action="/" class="search-bar">
+  <input type="text" name="city" value="{{ city }}" placeholder="Enter city name…" />
+  <button type="submit">Search</button>
+  {% if current %}
+  <form method="post" action="/log" class="log-form">
+    <input type="hidden" name="city" value="{{ city }}" />
+    <button type="submit" class="log-btn">Log Reading</button>
+  </form>
+  {% endif %}
+</form>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
+{% if current %}
+<div class="grid">
+  <div class="card">
+    <h2>Current — {{ current.city }}, {{ current.country }}</h2>
+    <div class="current-main">
+      <img src="https://openweathermap.org/img/wn/{{ current.icon }}@2x.png" alt="{{ current.description }}" />
+      <div>
+        <div class="current-temp">{{ "%.1f"|format(current.temp_c) }}°C</div>
+        <div class="current-desc">{{ current.description }}</div>
+        <div style="font-size:.8rem;color:#64748b;margin-top:.25rem;">Feels like {{ "%.1f"|format(current.feels_like_c) }}°C</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Humidity</div><div class="stat-value">{{ current.humidity }}%</div></div>
+      <div class="stat"><div class="stat-label">Pressure</div><div class="stat-value">{{ current.pressure }} hPa</div></div>
+      <div class="stat"><div class="stat-label">Wind</div><div class="stat-value">{{ current.wind_speed }} m/s</div></div>
+      <div class="stat"><div class="stat-label">Clouds</div><div class="stat-value">{{ current.clouds }}%</div></div>
+      {% if current.visibility %}
+      <div class="stat"><div class="stat-label">Visibility</div><div class="stat-value">{{ (current.visibility / 1000)|round(1) }} km</div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if forecast %}
+<div class="section">
+  <h2>5-Day Forecast (3h intervals)</h2>
+  <div class="forecast-scroll">
+    {% for f in forecast %}
+    <div class="forecast-item">
+      <div class="forecast-time">{{ f.dt[5:16].replace("T"," ") }}</div>
+      <img src="https://openweathermap.org/img/wn/{{ f.icon }}.png" alt="{{ f.description }}" />
+      <div class="forecast-temp">{{ "%.0f"|format(f.temp_c) }}°C</div>
+      <div class="forecast-pop">{% if f.pop %}{{ f.pop }}% 💧{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if history %}
+<div class="section">
+  <h2>Logged History — {{ city }}</h2>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Time (UTC)</th><th>Temp °C</th><th>Humidity</th><th>Wind m/s</th><th>Conditions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in history %}
+        <tr>
+          <td>{{ r.timestamp.strftime("%Y-%m-%d %H:%M") }}</td>
+          <td>{{ "%.1f"|format(r.temp_c) }}</td>
+          <td>{{ r.humidity }}%</td>
+          <td>{{ r.wind_speed }}</td>
+          <td>{{ r.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+</body>
+</html>
