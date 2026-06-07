@@ -13,6 +13,14 @@ from app import weather as wx
 
 load_dotenv()
 
+_PLACEHOLDER = "your_api_key_here"
+_api_key = os.getenv("OPENWEATHER_API_KEY", "")
+if not _api_key or _api_key == _PLACEHOLDER:
+    raise SystemExit(
+        "\n  ERROR: OPENWEATHER_API_KEY is not set.\n"
+        "  Copy .env.example to .env and add your key from https://openweathermap.org/api\n"
+    )
+
 app = FastAPI(title="Weather Tracker")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
